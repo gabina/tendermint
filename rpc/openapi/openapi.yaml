@@ -204,6 +204,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /collect_then_broadcast_tx_aync:
+  get:
+    summary: Returns right away, checks the tx and collect it.
+    tags:
+      - Tx
+    operationId: collect_then_broadcast_tx_commit
+    description: |
+      IMPORTANT: not tested.
+
+      CONTRACT: 
+      
+    parameters:
+      - in: query
+        name: tx
+        required: true
+        schema:
+          type: string
+          example: "123"
+        description: The transaction
+    responses:
+      "200":
+        description: empty answer
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectThenBroadcastTxResponse"
+      "500":
+        description: empty error
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorResponse"
   /check_tx:
     get:
       summary: Checks the transaction without executing it.
