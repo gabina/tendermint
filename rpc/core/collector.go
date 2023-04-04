@@ -1,9 +1,6 @@
 package core
 
 import (
-	"bytes"
-
-	brotli "github.com/andybalholm/brotli"
 	abci "github.com/tendermint/tendermint/abci/types"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
@@ -19,27 +16,25 @@ import (
 // and brotli them before the broadcast. That way one signle message would contain several txs.
 func CollectThenBroadcastTxAsync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 
-	// Compress tx using brotli
-	var buffer bytes.Buffer
-	bw := brotli.NewWriter(nil)
-	bw.Reset(&buffer)
-	if _, err := bw.Write(tx); err != nil {
-		panic(err)
-	}
-	if err := bw.Close(); err != nil {
-		panic(err)
-	}
+	go collectThenBroadcastTx(tx)
 
-	// This call should be async
-	res, err := env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: buffer.Bytes()})
+	return &ctypes.ResultBroadcastTx{Hash: tx.Hash()}, nil
+}
 
+func collectThenBroadcastTx(tx types.Tx) {
+	encodedTx, err := env.Collector.EncodeTx(tx)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &ctypes.ResultBroadcastTx{
-		Code:      res.Code,
-		Data:      res.Data,
-		Log:       res.Log,
-		Codespace: res.Codespace,
-		Hash:      tx.Hash()}, nil
+
+	// Check the tx without adding it to the mempool yet
+	res, err := env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: encodedTx})
+	if err != nil {
+		return
+	}
+
+	// If the tx is valid, we add it
+	if res.Code == 0 {
+		env.Collector.AddTx(tx)
+	}
 }
