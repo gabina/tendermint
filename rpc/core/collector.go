@@ -1,6 +1,9 @@
 package core
 
 import (
+	"bytes"
+
+	brotli "github.com/andybalholm/brotli"
 	abci "github.com/tendermint/tendermint/abci/types"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
@@ -16,8 +19,18 @@ import (
 // and brotli them before the broadcast. That way one signle message would contain several txs.
 func CollectThenBroadcastTxAsync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 
+	var buffer bytes.Buffer
+	bw := brotli.NewWriter(nil)
+	bw.Reset(&buffer)
+	if _, err := bw.Write(tx); err != nil {
+		panic(err)
+	}
+	if _, err := bw.Close(); err !- nil {
+		panic(err)
+	}
+
 	// This call should be async
-	res, err := env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: tx})
+	res, err := env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: buffer.Bytes()})
 
 	if err != nil {
 		return nil, err
