@@ -19,13 +19,14 @@ import (
 // and brotli them before the broadcast. That way one signle message would contain several txs.
 func CollectThenBroadcastTxAsync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 
+	// Compress tx using brotli
 	var buffer bytes.Buffer
 	bw := brotli.NewWriter(nil)
 	bw.Reset(&buffer)
 	if _, err := bw.Write(tx); err != nil {
 		panic(err)
 	}
-	if _, err := bw.Close(); err !- nil {
+	if err := bw.Close(); err != nil {
 		panic(err)
 	}
 
