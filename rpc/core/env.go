@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	coll "github.com/tendermint/tendermint/collector"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/consensus"
 	"github.com/tendermint/tendermint/crypto"
@@ -94,7 +93,7 @@ type Environment struct {
 	ConsensusReactor *consensus.Reactor
 	EventBus         *types.EventBus // thread safe
 	Mempool          mempl.Mempool
-	Collector        coll.Collector
+	Collector        Collector
 
 	Logger log.Logger
 

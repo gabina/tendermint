@@ -19,7 +19,6 @@ import (
 	bcv0 "github.com/tendermint/tendermint/blockchain/v0"
 	bcv1 "github.com/tendermint/tendermint/blockchain/v1"
 	bcv2 "github.com/tendermint/tendermint/blockchain/v2"
-	coll "github.com/tendermint/tendermint/collector"
 	cfg "github.com/tendermint/tendermint/config"
 	cs "github.com/tendermint/tendermint/consensus"
 	"github.com/tendermint/tendermint/crypto"
@@ -646,8 +645,8 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 	return pexReactor
 }
 
-func createCollector() coll.Collector {
-	return coll.NewBrotliCollector()
+func createCollector() rpccore.Collector {
+	return rpccore.NewBrotliCollector()
 }
 
 // startStateSync starts an asynchronous state sync process, then switches to fast sync mode.
@@ -1089,7 +1088,7 @@ func (n *Node) ConfigureRPC() error {
 		ConsensusReactor: n.consensusReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
-		Collector:        createCollector(),
+		Collector:        createCollector(), //this is not strcitly neccesary as part of the environment
 
 		Logger: n.Logger.With("module", "rpc"),
 
