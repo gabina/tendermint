@@ -38,12 +38,12 @@ func NewBrotliCollector() *BrotliCollector {
 
 // For now, checking the tx is client reponsability
 func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
-	bcoll.nTxs++
 	// Add the separator between txs at the begining if this is the first tx in the batch
 	if bcoll.nTxs > 0 {
 		tx = append([]byte("/"), tx...)
 	}
-	bcoll.collectedPlainTxs = append((*bcoll).collectedPlainTxs, tx...)
+	bcoll.nTxs++
+	bcoll.collectedPlainTxs = append(bcoll.collectedPlainTxs, tx...)
 
 	if bcoll.nTxs >= 3 {
 		// Encode the collected txs
@@ -54,7 +54,7 @@ func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
 		BroadcastTxAsync(&rpctypes.Context{}, encodedTxs)
 
 		// Reset collector state
-		bcoll.collectedPlainTxs = []byte{}
+		bcoll.collectedPlainTxs = bcoll.collectedPlainTxs[:0]
 		bcoll.nTxs = 0
 
 	}
