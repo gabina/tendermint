@@ -54,7 +54,7 @@ func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
 		BroadcastTxAsync(&rpctypes.Context{}, encodedTxs)
 
 		// Reset collector state
-		bcoll.collectedPlainTxs = nil
+		bcoll.collectedPlainTxs = []byte{}
 		bcoll.nTxs = 0
 
 	}
