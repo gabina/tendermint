@@ -5,6 +5,7 @@ import (
 
 	"github.com/andybalholm/brotli"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmsync "github.com/tendermint/tendermint/libs/sync"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 	"github.com/tendermint/tendermint/types"
@@ -26,6 +27,8 @@ type Collector interface {
 type BrotliCollector struct {
 	collectedPlainTxs []byte
 	nTxs              int
+	// need a mutex to access the shared variables
+	mtx tmsync.Mutex
 }
 
 func NewBrotliCollector() *BrotliCollector {
@@ -33,12 +36,15 @@ func NewBrotliCollector() *BrotliCollector {
 	return &BrotliCollector{
 		collectedPlainTxs: emptySlice,
 		nTxs:              0,
+		// The zero value for a Mutex is an unlocked mutex.
 	}
 }
 
 // For now, checking the tx is client reponsability
 func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
 	// Add the separator between txs at the begining if this is the first tx in the batch
+	bcoll.mtx.Lock()
+	defer bcoll.mtx.Unlock()
 	if bcoll.nTxs > 0 {
 		tx = append([]byte("/"), tx...)
 	}
