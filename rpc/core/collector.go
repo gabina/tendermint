@@ -43,8 +43,8 @@ func NewBrotliCollector() *BrotliCollector {
 // For now, checking the tx is client reponsability
 func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
 	// Add the separator between txs at the begining if this is the first tx in the batch
-	bcoll.mtx.Lock()
-	defer bcoll.mtx.Unlock()
+	// bcoll.mtx.Lock()
+	// defer bcoll.mtx.Unlock()
 	if bcoll.nTxs > 0 {
 		tx = append([]byte("/"), tx...)
 	}
