@@ -102,13 +102,16 @@ func collectThenBroadcastTx(tx types.Tx) {
 	}
 
 	// Check the tx without adding it to the mempool yet
-	res, err := env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: encodedTx})
+	_, err = env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: encodedTx})
 	if err != nil {
 		return
 	}
 
 	// If the tx is valid, we add it
-	if res.Code == 0 {
-		env.Collector.AddTx(tx)
-	}
+	// if res.Code == 0 {
+	// 	env.Collector.AddTx(tx)
+	// }
+
+	// Always add the tx, without checking it
+	env.Collector.AddTx(tx)
 }
