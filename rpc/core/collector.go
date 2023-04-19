@@ -72,7 +72,7 @@ func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
 
 		// Reset collector state
 		bcoll.collectedPlainTxs = bcoll.collectedPlainTxs[:0]
-		bcoll.compressedBuffer.Reset()
+		bcoll.compressedBuffer = bytes.NewBuffer(make([]byte, 0, 100000*2))
 		bcoll.compressedWriter.Reset(bcoll.compressedBuffer)
 		bcoll.nTxs = 0
 
