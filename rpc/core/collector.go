@@ -101,7 +101,7 @@ func (bcoll *BrotliCollector) addSegmentToCompressed(tx types.Tx) error {
 	if err != nil {
 		return err
 	}
-	_, err = bcoll.compressedWriter.Write(tx)
+	_, err = bcoll.compressedWriter.Write(encoded)
 	// bcoll.newUncompressedSize += lenWritten
 	// bcoll.totalUncompressedSize += lenWritten
 
