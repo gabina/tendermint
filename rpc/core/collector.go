@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/andybalholm/brotli"
-	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	tmsync "github.com/tendermint/tendermint/libs/sync"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
@@ -28,15 +28,20 @@ type BrotliCollector struct {
 	collectedPlainTxs []byte
 	nTxs              int
 	// need a mutex to access the shared variables
-	mtx tmsync.Mutex
+	mtx              tmsync.Mutex
+	compressedBuffer *bytes.Buffer
+	compressedWriter *brotli.Writer
 }
 
 func NewBrotliCollector() *BrotliCollector {
 	var emptySlice []byte
+	compressedBuffer := bytes.NewBuffer(make([]byte, 0, 100000*2))
 	return &BrotliCollector{
 		collectedPlainTxs: emptySlice,
 		nTxs:              0,
 		// The zero value for a Mutex is an unlocked mutex.
+		compressedBuffer: compressedBuffer,
+		compressedWriter: brotli.NewWriter(compressedBuffer),
 	}
 }
 
@@ -45,22 +50,30 @@ func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
 	// Add the separator between txs at the begining if this is the first tx in the batch
 	bcoll.mtx.Lock()
 	defer bcoll.mtx.Unlock()
-	if bcoll.nTxs > 0 {
-		tx = append([]byte("/"), tx...)
-	}
+	// if bcoll.nTxs > 0 {
+	// 	tx = append([]byte("/"), tx...)
+	// }
 	bcoll.nTxs++
-	bcoll.collectedPlainTxs = append(bcoll.collectedPlainTxs, tx...)
+	bcoll.addSegmentToCompressed(tx)
+	//bcoll.collectedPlainTxs = append(bcoll.collectedPlainTxs, tx...)
 
 	if bcoll.nTxs >= 3 {
 		// Encode the collected txs
-		encodedTxs, err := bcoll.EncodeTx(bcoll.collectedPlainTxs)
+		err := bcoll.compressedWriter.Close()
 		if err != nil {
 			panic(err)
 		}
+		encodedTxs := bcoll.compressedBuffer.Bytes()
+		// encodedTxs, err := bcoll.EncodeTx(bcoll.collectedPlainTxs)
+		// if err != nil {
+		// 	panic(err)
+		// }
 		BroadcastTxAsync(&rpctypes.Context{}, encodedTxs)
 
 		// Reset collector state
 		bcoll.collectedPlainTxs = bcoll.collectedPlainTxs[:0]
+		bcoll.compressedBuffer.Reset()
+		bcoll.compressedWriter.Reset(bcoll.compressedBuffer)
 		bcoll.nTxs = 0
 
 	}
@@ -81,6 +94,20 @@ func (bcoll *BrotliCollector) EncodeTx(tx types.Tx) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+func (bcoll *BrotliCollector) addSegmentToCompressed(tx types.Tx) error {
+
+	// encode some way
+	encoded, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		return err
+	}
+	_, err = bcoll.compressedWriter.Write(tx)
+	// bcoll.newUncompressedSize += lenWritten
+	// bcoll.totalUncompressedSize += lenWritten
+
+	return err
+}
+
 //-----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by Tendermint!)
 
@@ -96,16 +123,16 @@ func CollectThenBroadcastTxAsync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.Re
 }
 
 func collectThenBroadcastTx(tx types.Tx) {
-	encodedTx, err := env.Collector.EncodeTx(tx)
-	if err != nil {
-		return
-	}
+	// encodedTx, err := env.Collector.EncodeTx(tx)
+	// if err != nil {
+	// 	return
+	// }
 
 	// Check the tx without adding it to the mempool yet
-	_, err = env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: encodedTx})
-	if err != nil {
-		return
-	}
+	// _, err = env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: encodedTx})
+	// if err != nil {
+	// 	return
+	// }
 
 	// If the tx is valid, we add it
 	// if res.Code == 0 {
