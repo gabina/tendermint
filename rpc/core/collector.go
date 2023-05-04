@@ -47,27 +47,20 @@ func NewBrotliCollector() *BrotliCollector {
 
 // For now, checking the tx is client reponsability
 func (bcoll *BrotliCollector) AddTx(tx types.Tx) {
-	// Add the separator between txs at the begining if this is the first tx in the batch
 	bcoll.mtx.Lock()
 	defer bcoll.mtx.Unlock()
-	// if bcoll.nTxs > 0 {
-	// 	tx = append([]byte("/"), tx...)
-	// }
+
 	bcoll.nTxs++
 	bcoll.addSegmentToCompressed(tx)
-	//bcoll.collectedPlainTxs = append(bcoll.collectedPlainTxs, tx...)
 
-	if bcoll.nTxs >= 3 {
+	if bcoll.nTxs >= 800 {
 		// Encode the collected txs
 		err := bcoll.compressedWriter.Close()
 		if err != nil {
 			panic(err)
 		}
 		encodedTxs := bcoll.compressedBuffer.Bytes()
-		// encodedTxs, err := bcoll.EncodeTx(bcoll.collectedPlainTxs)
-		// if err != nil {
-		// 	panic(err)
-		// }
+
 		BroadcastTxAsync(&rpctypes.Context{}, encodedTxs)
 
 		// Reset collector state
@@ -102,8 +95,6 @@ func (bcoll *BrotliCollector) addSegmentToCompressed(tx types.Tx) error {
 		return err
 	}
 	_, err = bcoll.compressedWriter.Write(encoded)
-	// bcoll.newUncompressedSize += lenWritten
-	// bcoll.totalUncompressedSize += lenWritten
 
 	return err
 }
@@ -123,22 +114,6 @@ func CollectThenBroadcastTxAsync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.Re
 }
 
 func collectThenBroadcastTx(tx types.Tx) {
-	// encodedTx, err := env.Collector.EncodeTx(tx)
-	// if err != nil {
-	// 	return
-	// }
-
-	// Check the tx without adding it to the mempool yet
-	// _, err = env.ProxyAppMempool.CheckTxSync(abci.RequestCheckTx{Tx: encodedTx})
-	// if err != nil {
-	// 	return
-	// }
-
-	// If the tx is valid, we add it
-	// if res.Code == 0 {
-	// 	env.Collector.AddTx(tx)
-	// }
-
 	// Always add the tx, without checking it
 	env.Collector.AddTx(tx)
 }
