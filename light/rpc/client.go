@@ -195,6 +195,11 @@ func (c *Client) BroadcastTxCommit(ctx context.Context, tx types.Tx) (*ctypes.Re
 	return c.next.BroadcastTxCommit(ctx, tx)
 }
 
+// Only to implement client.Client
+func (c *Client) CollectThenBroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	return c.next.BroadcastTxAsync(ctx, tx)
+}
+
 func (c *Client) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.next.BroadcastTxAsync(ctx, tx)
 }

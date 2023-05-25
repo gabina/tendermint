@@ -75,6 +75,22 @@ func (a ABCIApp) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.Res
 	}, nil
 }
 
+// Only to implement client.Client
+func (a ABCIApp) CollectThenBroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	c := a.App.CheckTx(abci.RequestCheckTx{Tx: tx})
+	// and this gets written in a background thread...
+	if !c.IsErr() {
+		go func() { a.App.DeliverTx(abci.RequestDeliverTx{Tx: tx}) }()
+	}
+	return &ctypes.ResultBroadcastTx{
+		Code:      c.Code,
+		Data:      c.Data,
+		Log:       c.Log,
+		Codespace: c.Codespace,
+		Hash:      tx.Hash(),
+	}, nil
+}
+
 func (a ABCIApp) BroadcastTxSync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	c := a.App.CheckTx(abci.RequestCheckTx{Tx: tx})
 	// and this gets written in a background thread...
@@ -134,6 +150,15 @@ func (m ABCIMock) BroadcastTxCommit(ctx context.Context, tx types.Tx) (*ctypes.R
 }
 
 func (m ABCIMock) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	res, err := m.Broadcast.GetResponse(tx)
+	if err != nil {
+		return nil, err
+	}
+	return res.(*ctypes.ResultBroadcastTx), nil
+}
+
+// Only to implement client.Client
+func (m ABCIMock) CollectThenBroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	res, err := m.Broadcast.GetResponse(tx)
 	if err != nil {
 		return nil, err
@@ -219,6 +244,18 @@ func (r *ABCIRecorder) BroadcastTxCommit(ctx context.Context, tx types.Tx) (*cty
 }
 
 func (r *ABCIRecorder) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	res, err := r.Client.BroadcastTxAsync(ctx, tx)
+	r.addCall(Call{
+		Name:     "broadcast_tx_async",
+		Args:     tx,
+		Response: res,
+		Error:    err,
+	})
+	return res, err
+}
+
+// Only to implement client.Client
+func (r *ABCIRecorder) CollectThenBroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	res, err := r.Client.BroadcastTxAsync(ctx, tx)
 	r.addCall(Call{
 		Name:     "broadcast_tx_async",

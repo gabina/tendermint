@@ -257,6 +257,13 @@ func (c *baseRPCClient) BroadcastTxCommit(
 	return result, nil
 }
 
+func (c *baseRPCClient) CollectThenBroadcastTxAsync(
+	ctx context.Context,
+	tx types.Tx,
+) (*ctypes.ResultBroadcastTx, error) {
+	return c.broadcastTX(ctx, "collect_then_broadcast_tx_async", tx)
+}
+
 func (c *baseRPCClient) BroadcastTxAsync(
 	ctx context.Context,
 	tx types.Tx,

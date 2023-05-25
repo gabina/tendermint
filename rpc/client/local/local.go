@@ -91,6 +91,10 @@ func (c *Local) BroadcastTxCommit(ctx context.Context, tx types.Tx) (*ctypes.Res
 	return core.BroadcastTxCommit(c.ctx, tx)
 }
 
+func (c *Local) CollectThenBroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
+	return core.CollectThenBroadcastTxAsync(c.ctx, tx)
+}
+
 func (c *Local) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return core.BroadcastTxAsync(c.ctx, tx)
 }

@@ -645,6 +645,10 @@ func createPEXReactorAndAddToSwitch(addrBook pex.AddrBook, config *cfg.Config,
 	return pexReactor
 }
 
+func createCollector() rpccore.Collector {
+	return rpccore.NewBrotliCollector()
+}
+
 // startStateSync starts an asynchronous state sync process, then switches to fast sync mode.
 func startStateSync(ssR *statesync.Reactor, bcR fastSyncReactor, conR *cs.Reactor,
 	stateProvider statesync.StateProvider, config *cfg.StateSyncConfig, fastSync bool,
@@ -1084,6 +1088,7 @@ func (n *Node) ConfigureRPC() error {
 		ConsensusReactor: n.consensusReactor,
 		EventBus:         n.eventBus,
 		Mempool:          n.mempool,
+		Collector:        createCollector(), //this is not strcitly neccesary as part of the environment
 
 		Logger: n.Logger.With("module", "rpc"),
 
